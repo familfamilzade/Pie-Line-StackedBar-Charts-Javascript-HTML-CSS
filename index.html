@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <title>Assignment 3</title>
+		
+		<script type="text/javascript" src="../d3/d3.js" charset="utf-8"></script>
+    <style type="text/css">
+		
+		.line {
+  			fill: lightsteelblue;
+  			stroke: grey;
+  			stroke-width: 1.5px;
+			}
+		svg	text{
+			pointer-events: none;
+		}
+	
+		#tooltip {
+        		position: absolute;
+        		width: 210px;
+        		height: auto;
+        		padding: 10px;
+        		background-color: white;
+        		border-radius: 10px;
+        		box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+        		pointer-events: none;
+		}
+		
+		#tooltipdoubleclick {
+        		position: absolute;
+        		width: 525px;
+        		height: 320px;
+        		padding: 0px;
+        		background-color: white;
+        		border-radius: 10px;
+        		box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+				pointer-events: none;
+        		
+		}
+		
+		#tooltipdoubleclick text{
+			fill: black
+		}
+		
+		#tooltipdoubleclick button{
+			float: right
+		}
+		
+		#tooltiponeclick {
+        		position: absolute;
+        		width: 600px;
+        		height: auto;
+        		padding: 0px;
+        		background-color: white;
+        		border-radius: 10px;
+        		box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.4);
+				pointer-events: none;
+        		
+		}
+		
+		#tooltiponeclick text{
+			fill: black
+		}
+		
+		#tooltiponeclick button{
+			float: right
+		}
+		
+		#tooltip.hidden { 
+	      		display: none;      
+		}
+		#tooltipdoubleclick.hide { 
+	      		display: none;
+		}	
+		#tooltiponeclick.hide { 
+	      		display: none;
+		}	
+
+		#tooltip p {
+        		margin: 0;
+		        font-family: sans-serif;
+        		font-size: 12px;
+        		line-height: 18px;
+		}
+	
+	
+		text {
+				font-family: sans-serif;
+				font-size: 9px;
+				fill: white;
+		}
+				
+			.country{
+				float: right;
+				clear: both;
+				position: relative;
+				margin-right: 500px;
+				
+				
+			}
+			.cont{
+				float: right;
+				position: relative;
+				clear: left;
+				font-size: 12px;
+			}	
+			#selection{
+				clear: both;
+			}	
+			.country.extra{
+				display: none;
+			}
+			
+			
+	</style>
+	</head>
+<body>
+	<p><strong>Click twice on any point of a pie to see the stack bar chart of GDP values of the selected countries</strong></p>
+	<p><strong>Click twice on a country to see the line chart of GDP values 2000-2012</strong></p>
+	<p>Continent Selection<select id="selection">
+			<option value=europe12gdp>Europe</option>
+			<option value=asia12gdp>Asia</option>
+			<option value=africa12gdp>Africa</option>
+			<option value=americas12gdp>Americas</option>
+			<option value=oceania12gdp>Oceania</option>
+	</select></p>		
+	
+	<br/>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Germany</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">United Kingdom</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">France</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Italy</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Spain</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Russia</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Netherlands</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Switzerland</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Sweden</text></input>
+	<input class="country" type="checkbox" checked=true><text class = "cont">Poland</text></input>
+	
+		<div id="tooltip" class="hidden">
+        	<p><strong>Information about Country</strong></p>
+        	<p><span id="name">100</span></p>
+			<p><span id="value">100</span></p>
+		</div>
+		
+		<div id="tooltipdoubleclick" class="hide">
+	
+		</div>
+		
+		<div id="tooltiponeclick" class = "hide">
+		
+		</div>	
+		
+	<script type="text/javascript">
+		
+		var jsondata;
+		var checked_names = [];
+		var europe_tooltip = {};
+		var europe_oneclick = [];
+		var asia_tooltip = {}
+		var asia_oneclick = []
+		var americas_tooltip = {}
+		var americas_oneclick = []
+		var africa_tooltip = {}
+		var africa_oneclick = []
+		var oceania_tooltip = {}
+		var oceania_oneclick = []
+		var current_tooltip = {}
+		var current_oneclick = []	
+		var names_all = [];
+		var values_all = [];
+		var europe = [];
+		var europe_names = [];
+		var europe12gdp = []; 
+		var asia = [];
+		var asia_names = [];
+		var asia12gdp = [];
+		var africa = [];
+		var africa_names = [];
+		var africa12gdp = [];
+		var americas = [];
+		var americas_names = [];
+		var americas12gdp = [] 
+		var oceania = [];
+		var oceania_names = [];
+		var oceania12gdp = [];
+		var names;
+		var current = [];
+		var current_dataset = []; 
+		var current_names = [];
+		var dataset = [];
+		var oneclick_dataset = [];
+		var colors = d3.scaleOrdinal(d3.schemeCategory10);
+		var oneclick_names = [];
+		
+		var info_oneclick = [10]
+		
+		
+		d3.json("countries.json", function(data) {
+            jsondata=data;
+			for(i = 0; i<jsondata.length; i++){
+				if(jsondata[i].continent == "Europe"){
+					europe.push([jsondata[i].name, jsondata[i].years[17].gdp]) 
+				}
+				else if(jsondata[i].continent == "Asia"){
+					asia.push([jsondata[i].name, jsondata[i].years[17].gdp])
+				}
+				else if(jsondata[i].continent == "Africa"){
+					africa.push([jsondata[i].name, jsondata[i].years[17].gdp])
+				}
+				else if(jsondata[i].continent == "Americas"){
+					americas.push([jsondata[i].name, jsondata[i].years[17].gdp])
+				}
+				else if(jsondata[i].continent == "Oceania"){
+					oceania.push([jsondata[i].name, jsondata[i].years[17].gdp])
+				} 	
+			}
+			europe.sort(function(a, b) {
+				return a[1] - b[1];
+			});
+			europe = europe.slice(-10);
+			asia.sort(function(a, b) {
+				return a[1] - b[1];
+			});
+			asia = asia.slice(-10);
+			africa.sort(function(a, b) {
+				return a[1] - b[1];
+			});
+			africa = africa.slice(-10);
+			oceania.sort(function(a, b) {
+				return a[1] - b[1];
+			});
+			oceania = oceania.slice(-10);
+			americas.sort(function(a, b) {
+				return a[1] - b[1];
+			});		
+			americas = americas.slice(-10);	
+			for (i=0; i<10; i++){
+				europe12gdp.push(europe[i][1]);
+				europe_names.push(europe[i][0]);
+				asia12gdp.push(asia[i][1]);
+				asia_names.push(asia[i][0]);
+				africa12gdp.push(africa[i][1]);
+				africa_names.push(africa[i][0]);
+				americas12gdp.push(americas[i][1]);
+				americas_names.push(americas[i][0]);
+				names_all.push(europe[i][0]);
+				values_all.push(europe[i]);
+				names_all.push(asia[i][0]);
+				values_all.push(asia[i]);
+				names_all.push(africa[i][0]);
+				values_all.push(africa[i]);
+				names_all.push(americas[i][0]);
+				values_all.push(americas[i]);
+			}
+			for(i=0; i<3; i++){
+				oceania12gdp.push(oceania[i][1]);
+				oceania_names.push(oceania[i][0]);
+				names_all.push(oceania[i][0]);
+				values_all.push(oceania[i]);
+			} 
+			for(i=0; i<8; i++){
+				oceania12gdp.push(0);
+				oceania.push([" ", 0]);
+			}
+			
+			for(i=0; i<jsondata.length; i++){
+				var object =[]
+				var oneclick = {}
+				if(europe_names.indexOf(jsondata[i].name)>-1){
+					for(j=5; j<18; j++){
+						object.push([jsondata[i].years[j].year, jsondata[i].years[j].gdp])
+						
+					}
+					europe_tooltip[jsondata[i].name] = object
+				}
+				else if(asia_names.indexOf(jsondata[i].name)>-1){
+					for(j=5; j<18; j++){
+						object.push([jsondata[i].years[j].year, jsondata[i].years[j].gdp])
+					}
+					asia_tooltip[jsondata[i].name] = object
+				}
+				else if(africa_names.indexOf(jsondata[i].name)>-1){
+					for(j=5; j<18; j++){
+						object.push([jsondata[i].years[j].year, jsondata[i].years[j].gdp])
+					}
+					africa_tooltip[jsondata[i].name] = object
+				}
+				else if(americas_names.indexOf(jsondata[i].name)>-1){
+					for(j=5; j<18; j++){
+						object.push([jsondata[i].years[j].year, jsondata[i].years[j].gdp])
+					}
+					americas_tooltip[jsondata[i].name] = object
+				}
+				else if(oceania_names.indexOf(jsondata[i].name)>-1){
+					for(j=5; j<18; j++){
+						object.push([jsondata[i].years[j].year, jsondata[i].years[j].gdp])
+					}
+					oceania_tooltip[jsondata[i].name] = object
+				}	
+			}
+			current_tooltip = europe_tooltip;
+			
+			
+			
+			for(i=0; i<europe_tooltip["France"].length; i++){
+				obj_eur = {}
+				obj_asi = {}
+				obj_afr = {}
+				obj_ame = {}
+				for(key in europe_tooltip){
+					obj_eur[key] = europe_tooltip[key][i][1]
+					
+				}
+				europe_oneclick.push(obj_eur)
+				for(key in asia_tooltip){
+					obj_asi[key] = asia_tooltip[key][i][1]
+					
+				}
+				asia_oneclick.push(obj_asi)
+				for(key in africa_tooltip){
+					obj_afr[key] = africa_tooltip[key][i][1]
+					
+				}
+				africa_oneclick.push(obj_afr)
+				for(key in americas_tooltip){
+					obj_ame[key] = americas_tooltip[key][i][1]
+					
+				}
+				americas_oneclick.push(obj_ame)
+			}
+			
+			for(i=0; i<oceania_tooltip["Australia"].length; i++){
+				obj_oce = {}
+				for(key in oceania_tooltip){
+					obj_oce[key] = oceania_tooltip[key][i][1]
+				}
+				oceania_oneclick.push(obj_oce)
+			}
+			
+			current_oneclick = europe_oneclick
+			oneclick_dataset = current_oneclick
+			names = europe;
+			oneclick_names = europe_names
+			
+			
+			
+			
+			
+			
+			
+			//////////////////////////////////////DOUBLE CLICK TOOLTIP SVG///////////////////////////////////////////////
+			var w2 = 600;
+			var h2 = 300;
+			var padding2 = 20;
+
+ 
+			dataset = current_tooltip["Germany"] 
+
+			var xScale = d3.scaleLinear()           
+                       .domain([d3.min(dataset, function(d) { return d[0]; }), d3.max(dataset, function(d) { return d[0]; })])  
+               		   .range([5*padding2, w2-5*padding2]);
+
+			var yScale = d3.scaleLinear()           
+			           .domain([d3.max(dataset, function(d) { return d[1]; }), d3.max(dataset, function(d) { return d[1]; })])  
+			           .range([h2-padding2, padding2]);    
+		
+		                 
+		//Define X axis
+			var xAxis = d3.axisBottom(xScale)     // a function to create an axis
+				   .ticks(dataset.length)  //Set  # of ticks
+				   .tickFormat(d3.format(".0f")) ;                
+				   
+		//Define Y axis
+			var yAxis = d3.axisLeft(yScale).ticks(12);
+                  	  
+
+			var line = d3.area()
+      				.x(function(d) { return xScale(d[0]); })
+      				.y0(function(d) { return yScale(d[1]); })
+					.y1(yScale(-(h2-15*padding2)))
+					.curve(d3.curveBasis);
+
+			var svg2 = d3.select("div#tooltipdoubleclick")
+            		.append("svg")
+            		.attr("width", w2)
+            		.attr("height", h2);
+
+		
+			//Create X axis
+			svg2.append("g")  // add a group element to the svg
+           .attr("class", "xaxis") //Assign class "axis" to group
+           .attr("transform", "translate(0," + (h2 - padding2) + ")")  // transform/shift the axis to bottom
+           .call(xAxis);   // call the axis function we generated on this group. So it will create & add axis to the group
+
+			//Create Y axis
+			svg2.append("g")
+    	   .attr("class", "yaxis")
+    	   .attr("transform", "translate(" + 5*padding2 + ",0)")  // shift the axis to right
+    	   .call(yAxis);
+	
+			svg2.append("path")
+      	  .attr("class", "line")
+      	  .attr("d", line(dataset))
+		  
+			svg2.append("text").attr("class", "svg2text").attr("x", 300).attr("y", 20).text("Country")
+			svg2.append("rect").attr("class", "rect").attr("x", 288).attr("y", 11).attr("width", 10).attr("height", 10).attr("fill", "red")	
+			
+			//////////////////DRAWING SVG AND PIE CHART/////////////////////////////////
+			///////////////////////////////////////////////////////////////////////////
+			
+			var w = 580;
+			var h = 600;
+
+			var pie = d3.pie();
+			var color = d3.scaleOrdinal(d3.schemeCategory10);
+			
+			var outerRadius = w/2;
+			var innerRadius = 0;
+			var arc = d3.arc()
+            .innerRadius(innerRadius)
+            .outerRadius(outerRadius);
+			
+			var svg = d3.select("body")
+            .append("svg")
+            .attr("width", w)
+            .attr("height", h);
+			
+	
+                
+		// create a group and under this group, bind data to paths
+		var arcs=svg.append("g")
+		.attr("transform", "translate(" + outerRadius + ", " + outerRadius + ")")
+        .selectAll("path")
+		.data(pie(europe12gdp))
+		.enter();
+                
+		// create path element for each wedge
+		arcs.append("path")
+  		.attr("d", function(d) {
+        return arc(d);
+        })
+		.attr("fill", function(d, i) {
+     	return color(i);
+    	}).append("text").text(function(d,i){return europe[i][0]}).style("display", "none");		
+
+                
+       	arcs.append("text")
+		.attr("class", "text_value")
+    	.attr("transform", function(d) {
+        return "translate(" + arc.centroid(d) + ")" +
+                    "rotate(" + 10*d.endAngle + ")"; })
+    	
+    	.attr("text-anchor", "middle")
+    	.text(function(d,i) {
+        return europe[i][0];
+   		});
+		
+		//arcs.selectAll("path").append("text").text(function(d,i){return europe[i][0]});
+		current_names = europe_names;
+		current = europe
+		checked_names = europe_names
+		
+		
+		
+		
+		///////////////////////////  ONE CLICK TOOLTIP SVG ///////////////////////////////////////////////////////////
+			var w3 = 600;
+		    var h3 = 300;
+			var padding3 = 20
+
+			   
+			var years = [2000, 2001, 2002, 2003, 2004, 2005, 2006, 2007, 2008, 2009, 2010, 2011, 2012];
+			
+						
+			var stack = d3.stack()
+			stack.keys(oneclick_names);
+            // use stack generator to create new dataset
+			stack_data=stack(oneclick_dataset);
+			
+            // create a band scale to equally divide the whole horizontal svg dimension to the stacked bars 				
+
+			var xScale2 = d3.scaleBand()      
+				.domain(d3.range(stack_data[0].length)) 
+        		.rangeRound([0, w3-8*padding3])
+		       	.padding(0.05);
+				
+			var bottomScale = d3.scaleLinear().domain([d3.min(years), d3.max(years)]).range([padding3,w3-9*padding3])	
+			
+			// find the max height the bars will get stacked and scale that range to the whole vertical svg dimension                        
+			var yScale2 = d3.scaleLinear()
+				.domain([0,				
+					d3.max(stack_data, function(d) {
+						return d3.max(d, function(d) {
+							return d[1];
+						});
+					})
+				])
+				.range([0, h3-padding3]);
+
+			// create an ordinal scale for 10 different colors
+			//var colors = d3.scaleOrdinal(d3.schemeCategory10);
+		
+			var svg3 = d3.select("div#tooltiponeclick")
+				  .append("svg")
+				  .attr("width", w3)
+				  .attr("height", h3);
+
+            svg3.selectAll("g")
+               .data(stack_data) 
+               .enter()
+               .append("g")
+               .attr("class", "stacked_bars")
+	    	   .attr("fill", function(d, i) {
+     		   	    return color(i);
+    		   	})
+               .selectAll("rect")
+			   .data(function(d) { return d; })
+			   .enter()
+			   .append("rect")
+			   .attr("x", function(d, i) {
+					return xScale2(i);
+			   })
+			   .attr("y", function(d) {
+					return yScale2(d[0]);
+			   })
+			   .attr("height", function(d) {
+					return yScale2(d[1])-yScale2(d[0]);
+			   })
+			   .attr("width", xScale2.bandwidth());	
+			
+			var xAxis2 = d3.axisBottom(bottomScale)     // a function to create an axis
+				   .ticks(years.length)  //Set  # of ticks
+				   .tickFormat(d3.format(".0f")) ; 
+			
+			svg3.append("g")  // add a group element to the svg
+           .attr("class", "xaxis") //Assign class "axis" to group
+           .attr("transform", "translate(0," + (h3 - padding3) + ")")  // transform/shift the axis to bottom
+           .call(xAxis2);   // call the axis function we generated on this group. So it will create & add axis to the group
+			
+			//////dataset     /////names3
+			
+			svg3.append("rect").attr("class", "legend").attr("x", 450).attr("y", 0).attr("width", 10).attr("height", 11).attr("fill", color(0))
+			svg3.append("text").attr("class", "legendnames").attr("x", 470).attr("y", 10).text(oneclick_names[0])
+
+			legend = svg3.selectAll(".legend").data(oneclick_names)
+			legendenter = svg3.selectAll(".legend").data(oneclick_names).enter().append("rect").attr("class", "legend").attr("x", 450).attr("y", function(d,i){return i*10}).attr("width", 10).attr("height", 11).attr("fill", function(d,i){return color(i)}) 	
+			legend.merge(legendenter).attr("x", 450).attr("y", function(d,i){return i*20}).attr("width", 10).attr("height", 11).attr("fill", function(d,i){return color(i)})
+			
+			legendname = svg3.selectAll(".legendnames").data(oneclick_names)
+			legendnameenter = svg3.selectAll(".legendnames").data(oneclick_names).enter().append("text").attr("class", "legendnames").attr("x", 470).attr("y", function(d, i){return 20*i+10}).text(function(d,i){return europe_names[i]})
+			legendname.merge(legendnameenter).attr("x", 470).attr("y", function(d, i){return 20*i+10}).text(function(d,i){return oneclick_names[i]})
+			
+			/////////////////////////////////    ONE-CLICK       EVENT           //////////////////////////////////////////
+			
+			arcs.selectAll("path").on("click", function(d){
+			oneclick_dataset = [];
+			d3.select("#tooltipdoubleclick").classed("hide", true)
+		 	
+			for(i = 0; i < current_oneclick.length; i++){
+				var container = {}
+				for(key in current_oneclick[i]){
+					if(checked_names.indexOf(key)>-1){
+						container[key] = current_oneclick[i][key] 
+					}
+				}
+				oneclick_dataset.push(container)
+			}
+			
+			oneclick_names = []
+			for(key in oneclick_dataset[0]){
+				oneclick_names.push(key)
+			}
+			var position = arc.centroid(d)
+			d3.select("div#tooltiponeclick")
+	     				.style("left", 300+position[0] + "px")
+	     				.style("top", 300+position[1] + "px")
+							
+			d3.select("div#tooltiponeclick").classed("hide", false);
+			
+			
+			stack.keys(oneclick_names);
+				stack_data = stack(oneclick_dataset);
+				xScale2.domain(d3.range(stack_data[0].length))
+				yScale2.domain([0,				
+					d3.max(stack_data, function(d) {
+						return d3.max(d, function(d) {
+							return d[1];
+						});
+					})
+				])
+			
+			if(oneclick_names.length>info_oneclick[0]){
+				
+				groups = svg3.selectAll(".stacked_bars").data(stack_data) 
+				groups.enter().append("g")
+               .attr("class", "stacked_bars")
+	    	   .attr("fill", function(d, i) {
+     		   	    return color(i);
+    		   	})
+               .selectAll("rect")
+			   .data(function(d) { return d; })
+			   .enter()
+			   .append("rect")
+			   .attr("x", function(d, i) {
+					return xScale2(i);
+			   })
+			   .attr("y", function(d) {
+					return yScale2(d[0]);
+			   })
+			   .attr("height", function(d) {
+					return yScale2(d[1])-yScale2(d[0]);
+			   })
+			   .attr("width", xScale2.bandwidth());
+				
+				svg3.selectAll(".stacked_bars").attr("fill", function(d, i) {
+     		   	    return color(i);
+    		   	})
+               .selectAll("rect")
+			   .data(function(d) { return d; })
+			   .attr("x", function(d, i) {
+					return xScale2(i);
+			   })
+			   .attr("y", function(d) {
+					return yScale2(d[0]);
+			   })
+			   .attr("height", function(d) {
+					return yScale2(d[1])-yScale2(d[0]);
+			   })
+			   .attr("width", xScale2.bandwidth());
+			
+			
+			legend = svg3.selectAll(".legend").data(oneclick_names)
+			legendenter = svg3.selectAll(".legend").data(oneclick_names).enter().append("rect")
+			.attr("class", "legend").attr("x", 450).attr("y", function(d,i){return i*10}).attr("width", 10).attr("height", 11).attr("fill", function(d,i){return color(i)}) 	
+			legend.merge(legendenter).attr("x", 450).attr("y", function(d,i){return i*20}).attr("width", 10).attr("height", 11).attr("fill", function(d,i){return color(i)})
+			
+			legendname = svg3.selectAll(".legendnames").data(oneclick_names)
+			legendnameenter = svg3.selectAll(".legendnames").data(oneclick_names).enter().append("text")
+			.attr("class", "legendnames").attr("x", 470).attr("y", function(d, i){return 20*i+10}).text(function(d,i){return oneclick_names[i]})
+			legendname.merge(legendnameenter).attr("x", 470).attr("y", function(d, i){return 20*i+10}).text(function(d,i){return oneclick_names[i]})
+			}
+
+			else {
+				stack.keys(oneclick_names);
+				stack_data = stack(oneclick_dataset);
+				xScale2.domain(d3.range(stack_data[0].length))
+				yScale2.domain([0,				
+					d3.max(stack_data, function(d) {
+						return d3.max(d, function(d) {
+							return d[1];
+						});
+					})
+				]);
+				 
+				groups = svg3.selectAll(".stacked_bars").data(stack_data) 
+				groups.exit().remove()
+				
+				groups.attr("fill", function(d, i) {
+     		   	    return color(i);
+    		   	})
+               .selectAll("rect")
+			   .data(function(d) { return d; })
+			   .attr("x", function(d, i) {
+					return xScale2(i);
+			   })
+			   .attr("y", function(d) {
+					return yScale2(d[0]);
+			   })
+			   .attr("height", function(d) {
+					return yScale2(d[1])-yScale2(d[0]);
+			   })
+			   .attr("width", xScale2.bandwidth());
+			
+				legend = svg3.selectAll(".legend").data(oneclick_names)
+				legend.exit().remove()
+				legend.attr("x", 450).attr("y", function(d,i){return i*20}).attr("width", 10).attr("height", 11).attr("fill", function(d,i){return color(i)})
+				
+				legendname = svg3.selectAll(".legendnames").data(oneclick_names)
+				legendname.exit().remove()
+				legendname.attr("x", 470).attr("y", function(d, i){return 20*i+10}).text(function(d,i){return oneclick_names[i]})
+			
+			}	
+			info_oneclick[0] = oneclick_names.length
+				
+			})
+			
+					
+		
+		/////////////////////////////MOUSEOVER//////////////////////////////////////////
+		arcs.selectAll("path").on("mouseover", function(d){
+			
+			var info = current_names.indexOf(d3.select(this).text())	
+			
+			
+			var position = arc.centroid(d)
+			var txt = "Name : " + current[info][0] //+ 
+			var txt_value = "GDP : " + current[info][1]
+			
+			d3.select("#tooltip")
+	     				.style("left", 300+position[0] + "px")
+	     				.style("top", 300+position[1] + "px")
+						.select("#name")
+	     				.text(txt);
+			d3.select("#tooltip").select("#value").text(txt_value);			
+			d3.select("#tooltip").classed("hidden", false);
+		})
+		arcs.selectAll("path").on("mouseout", function(){
+			d3.select("#tooltip").classed("hidden", true);
+			d3.select("#tooltipdoubleclick").classed("hide", true);
+			d3.select("#tooltiponeclick").classed("hide", true);
+		})
+		 
+		 ///////////////////////////////	DOUBLE CLICK 	////////////////////////////////////////////////
+		 
+		 arcs.selectAll("path").on("dblclick", function(d){
+		 d3.select("#tooltiponeclick").classed("hide", true)
+			var position = arc.centroid(d)
+			d3.select("div#tooltipdoubleclick")
+	     				.style("left", 300+position[0] + "px")
+	     				.style("top", 300+position[1] + "px")
+							
+			d3.select("div#tooltipdoubleclick").classed("hide", false);
+			
+			var country = d3.select(this).text()
+			dataset = current_tooltip[country]
+			
+			//xScale.domain([d3.min(dataset, function(d) { return d[0]; }), d3.max(dataset, function(d) { return d[0]; })])
+			yScale.domain([d3.min(dataset, function(d) { return d[1]; }), d3.max(dataset, function(d) { return d[1]; })])
+			//svg2.select(".xaxis").call(xAxis)
+			svg2.select(".yaxis").call(yAxis)
+			var fillcolor = d3.select(this).attr("fill")
+			svg2.select(".line").attr("d", line(dataset)).style("fill", fillcolor)
+			svg2.select(".rect").attr("fill", fillcolor)
+			svg2.select(".svg2text").text(country)
+		 })
+		 
+				 
+		 //////////////UPDATE GRAPHIC BASED ON CONTINENT//////////////
+		 ////////////////////////////////////////////////////////////
+		 d3.select("#selection").on("change", function(){
+		 d3.select("#tooltipdoubleclick").classed("hide", true)
+		 d3.select("#tooltiponeclick").classed("hide", true)
+			
+		 	for(i=0; i<10; i++){
+				document.getElementsByClassName("country")[i].checked = true
+			}
+			d3.selectAll(".country").style("display", "inline")
+				
+			dataset = eval(d3.select(this).property('value'))
+						 
+			if(dataset == europe12gdp){
+				names = europe;
+				current_names = europe_names;
+				checked_names = europe_names
+				current = europe
+				current_tooltip = europe_tooltip
+				current_oneclick = europe_oneclick
+				oneclick_dataset = current_oneclick
+			}
+			
+			else if(dataset == asia12gdp){
+				names = asia;
+				current_names = asia_names;
+				checked_names = asia_names;
+				current = asia
+				current_tooltip = asia_tooltip
+				current_oneclick = asia_oneclick
+				oneclick_dataset = current_oneclick
+			}
+			
+			else if(dataset == africa12gdp){
+				names = africa;
+				current_names = africa_names;
+				checked_names = africa_names;
+				current = africa
+				current_tooltip = africa_tooltip
+				current_oneclick = africa_oneclick
+				oneclick_dataset = current_oneclick
+			}
+			
+			else if(dataset == americas12gdp){
+				names = americas;
+				current_names = americas_names;
+				checked_names = americas_names
+		        current = americas
+				current_tooltip = americas_tooltip
+				current_oneclick = americas_oneclick
+				oneclick_dataset = current_oneclick	
+			}
+			
+			else if(dataset == oceania12gdp){
+				names = oceania;
+				current_names = oceania_names;
+				checked_names = oceania_names
+				current = oceania
+				current_tooltip = oceania_tooltip
+				current_oneclick = oceania_oneclick
+				oneclick_dataset = current_oneclick
+			}
+			oneclick_names = checked_names
+			
+			var x = svg.select("g")
+			
+			////////////UPDATE ARCS/////////////////////////
+			x.selectAll("path")
+		    .data(pie(dataset))
+			.transition()
+			.duration(function(d, i) {
+			return i * 600;
+			})
+			.ease(d3.easeElastic)
+			.attr("d", function(d) {
+            return arc(d)})
+			.attrTween('d', function(d) {
+			var i = d3.interpolate(d.startAngle+0.1, d.endAngle);
+			return function(t) {
+			d.endAngle = i(t);
+			return arc(d);
+			}
+			})			
+			.attr("fill", function(d, i) {
+     		return color(i);
+    		}).text(function(d,i){return current[i][0]})
+			
+			////////////UPDATE TEXT CONTENTS//////////////////	
+			x.selectAll(".text_value").data(pie(dataset))
+			.transition()
+			.duration(function(d, i) {
+			return i * 600;
+			}).ease(d3.easeElastic)
+    		.attr("transform", function(d) {
+			return "translate(" + arc.centroid(d) + ")" +
+                    "rotate(" + 10*d.endAngle + ")"; })
+    		.attr("text-anchor", "middle").text(function(d,i) {
+        	return names[i][0];
+   		 });
+			
+			d3.selectAll(".cont").data(names).text(function(d, i){return names[i][0]}).exit().remove()
+			if(names == oceania){
+				d3.selectAll(".country").data([1,2, 3]).exit().style("display", "none")
+			}
+						
+    	 })
+		 ///////////////////////////////UPDATE PIE CHART BASED ON CHECKBOXES//////////////////////////
+		 ////////////////////////////////////////////////////////////////////////////////////////////
+		 ///////////////////////////////////////////////////////////////////////////////////////////
+		 d3.selectAll(".country").on("change", function(){
+			oneclick_dataset = []
+			
+			checked_names = [] 
+			d3.select("#tooltipdoubleclick").classed("hide", true)
+			d3.select("#tooltiponeclick").classed("hide", true)
+			current = [];
+			current_dataset = [];
+			current_names = [];
+			if(names == europe){
+				for(i=0; i<10; i++){
+					if(document.getElementsByClassName("country")[i].checked == true){
+						var y = document.getElementsByClassName("cont")[i].innerHTML
+						checked_names.push(y)
+						if(europe_names.indexOf(y)>-1){
+							
+							var index = europe_names.indexOf(y)
+							current.push(names[index])
+							current_dataset.push(names[index][1])
+							current_names.push(names[index][0])
+						}
+						
+						 
+					}
+					else{
+							current.push(["", 0])
+							current_dataset.push(0)
+							current_names.push("")
+						}	
+				}
+			}
+			else if(names == asia){
+				for(i=0; i<10; i++){
+					if(document.getElementsByClassName("country")[i].checked == true){
+						var y = document.getElementsByClassName("cont")[i].innerHTML
+						checked_names.push(y)
+						if(asia_names.indexOf(y)>-1){
+						
+							var index = asia_names.indexOf(y)
+							current.push(names[index])
+							current_dataset.push(names[index][1])
+							current_names.push(names[index][0])
+						}
+						
+						 
+					}
+					else{
+							current.push(["", 0])
+							current_dataset.push(0)
+							current_names.push("")
+						}	
+				}
+			}
+			else if(names == africa){
+				for(i=0; i<10; i++){
+					if(document.getElementsByClassName("country")[i].checked == true){
+						var y = document.getElementsByClassName("cont")[i].innerHTML
+						checked_names.push(y)
+						if(africa_names.indexOf(y)>-1){
+						
+							var index = africa_names.indexOf(y)
+							current.push(names[index])
+							current_dataset.push(names[index][1])
+							current_names.push(names[index][0])
+						}
+						
+						 
+					}
+					else{
+							current.push(["", 0])
+							current_dataset.push(0)
+							current_names.push("")
+						}	
+				}
+			}
+			else if(names == americas){
+				for(i=0; i<10; i++){
+					if(document.getElementsByClassName("country")[i].checked == true){
+						var y = document.getElementsByClassName("cont")[i].innerHTML
+						checked_names.push(y)
+						if(americas_names.indexOf(y)>-1){
+						
+							var index = americas_names.indexOf(y)
+							current.push(names[index])
+							current_dataset.push(names[index][1])
+							current_names.push(names[index][0])
+						}
+						
+						 
+					}
+					else{
+							current.push(["", 0])
+							current_dataset.push(0)
+							current_names.push("")
+						}	
+				}
+			}
+			else if(names == oceania){
+				for(i=0; i<3; i++){
+					if(document.getElementsByClassName("country")[i].checked == true){
+						var y = document.getElementsByClassName("cont")[i].innerHTML
+						
+						checked_names.push(y)
+						if(oceania_names.indexOf(y)>-1){
+						
+							var index = oceania_names.indexOf(y)
+							current.push(names[index])
+							current_dataset.push(names[index][1])
+							current_names.push(names[index][0])
+						}
+						
+						 
+					}
+					else{
+							current.push(["", 0])
+							current_dataset.push(0)
+							current_names.push("")
+						}	
+				}
+			}
+						
+			
+			var x = svg.select("g")
+			
+			////////////UPDATE ARCS/////////////////////////
+			x.selectAll("path")
+		    .data(pie(current_dataset))
+			.transition()
+			.duration(function(d, i) {
+			return i * 600;
+			})
+			.ease(d3.easeElastic)
+			.attr("d", function(d) {
+            return arc(d)})
+			.attrTween('d', function(d) {
+			var i = d3.interpolate(d.startAngle+0.1, d.endAngle);
+			return function(t) {
+			d.endAngle = i(t);
+			return arc(d);
+			}
+			})			
+			.attr("fill", function(d, i) {
+     		return color(i);
+    		}).text(function(d,i){return current[i][0]})
+			
+			////////////UPDATE TEXT CONTENTS//////////////////	
+			x.selectAll(".text_value").data(pie(current_dataset))
+			.transition()
+			.duration(function(d, i) {
+			return i * 600;
+			}).ease(d3.easeElastic)
+    		.attr("transform", function(d) {
+			return "translate(" + arc.centroid(d) + ")" +
+                    "rotate(" + 10*d.endAngle + ")"; })
+    		.attr("text-anchor", "middle").text(function(d,i) {
+        	return current[i][0];
+   		 })
+			
+		 })
+		 
+		 })	
+	</script>
+
+</body>
